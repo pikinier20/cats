@@ -526,6 +526,95 @@ def mimaSettings(moduleName: String, includeCats1: Boolean = true) =
     }
   )
 
+lazy val docs_scala3Settings = Seq(
+  micrositeName := "Cats",
+  micrositeDescription := "Lightweight, modular, and extensible library for functional programming",
+  micrositeAuthor := "Cats contributors",
+  micrositeFooterText := Some(
+    """
+      |<p>© 2020 <a href="https://github.com/typelevel/cats#maintainers">The Cats Maintainers</a></p>
+      |<p style="font-size: 80%; margin-top: 10px">Website built with <a href="https://47deg.github.io/sbt-microsites/">sbt-microsites © 2020 47 Degrees</a></p>
+      |""".stripMargin
+  ),
+  micrositeHighlightTheme := "atom-one-light",
+  micrositeHomepage := "http://typelevel.org/cats/",
+  micrositeBaseUrl := "cats",
+  micrositeDocumentationUrl := "/cats/api/index.html",
+  micrositeDocumentationLabelDescription := "API Documentation",
+  micrositeGithubOwner := "typelevel",
+  micrositeExtraMdFilesOutput := resourceManaged.value / "main" / "jekyll",
+  micrositeExtraMdFiles := Map(
+    file("CONTRIBUTING.md") -> ExtraMdFileConfig(
+      "contributing.md",
+      "home",
+      Map("title" -> "Contributing", "section" -> "contributing", "position" -> "50")
+    ),
+    file("README.md") -> ExtraMdFileConfig(
+      "index.md",
+      "home",
+      Map("title" -> "Home", "section" -> "home", "position" -> "0")
+    )
+  ),
+  micrositeGithubRepo := "cats",
+  micrositeImgDirectory := (LocalRootProject / baseDirectory).value / "docs" / "src" / "main" / "resources" / "microsite" / "img",
+  micrositeJsDirectory := (LocalRootProject / baseDirectory).value / "docs" / "src" / "main" / "resources" / "microsite" / "js",
+  micrositeTheme := "pattern",
+  micrositePalette := Map(
+    "brand-primary" -> "#5B5988",
+    "brand-secondary" -> "#292E53",
+    "brand-tertiary" -> "#222749",
+    "gray-dark" -> "#49494B",
+    "gray" -> "#7B7B7E",
+    "gray-light" -> "#E5E5E6",
+    "gray-lighter" -> "#F4F3F4",
+    "white-color" -> "#FFFFFF"
+  ),
+  autoAPIMappings := true,
+  docsMappingsAPIDir := "api",
+  addMappingsToSiteDir(Compile / packageDoc / mappings, docsMappingsAPIDir),
+  ghpagesNoJekyll := false,
+  mdoc / fork := true,
+  scalacOptions ~= (_.filterNot(
+    Set("-Ywarn-unused-import", "-Ywarn-unused:imports", "-Ywarn-dead-code", "-Xfatal-warnings")
+  )),
+  git.remoteRepo := "git@github.com:typelevel/cats.git",
+  makeSite / includeFilter := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.yml" | "*.md" | "*.svg",
+  Jekyll / includeFilter := (makeSite / includeFilter).value,
+  mdocIn := (LocalRootProject / baseDirectory).value / "docs" / "src" / "main" / "mdoc",
+  mdocExtraArguments := Seq("--no-link-hygiene")
+)
+
+lazy val docs_scala3 = project
+  .in(file("docs_scala3"))
+  .enablePlugins(MdocPlugin)
+  .enablePlugins(MicrositesPlugin)
+  .settings(
+    scalaVersion := Scala3,
+    crossScalaVersions := Seq(Scala3)
+  )
+  .settings(catsSettings)
+  .settings(docs_scala3Settings)
+  .settings(
+    Compile / doc / tastyFiles ++= (core.jvm / Compile / products).value ++ (kernel.jvm / Compile / products).value ++ (free.jvm / Compile / products).value,
+    Compile / doc / dependencyClasspath ++= (core.jvm / Compile / dependencyClasspath).value ++ (kernel.jvm / Compile / dependencyClasspath).value ++ (free.jvm / Compile / dependencyClasspath).value,
+    Compile / doc / scalacOptions := Seq(
+      "-project", "Cats",
+      s"-source-links:github://typelevel/cats/main",
+      "-external-mappings:" +
+        ".*scala/.*::scaladoc3::https://dotty.epfl.ch/api/," +
+        ".*java/.*::javadoc::https://docs.oracle.com/javase/8/docs/api/",
+      "-social-links:" +
+        "github::https://github.com/typelevel/cats," +
+        "gitter::https://gitter.im/typelevel/cats," +
+        "twitter::https://twitter.com/typelevel," +
+        "discord::https://discord.gg/hWd4eS244g",
+      "-Ygenerate-inkuire",
+      "-project-logo", "docs/src/main/resources/microsite/img/cats-logo.png"
+    )
+  )
+  .dependsOn(core.jvm, free.jvm, kernelLaws.jvm, laws.jvm)
+
+
 lazy val docs = project
   .in(file("cats-docs"))
   .enablePlugins(MdocPlugin)
